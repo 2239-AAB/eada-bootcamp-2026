@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Account · Ownly{% endblock %}
+{% block main %}
+<div class="wrap page-head"><h1>Account</h1><p class="muted">Signed in as {{ user.email }}</p></div>
+<div class="wrap account">
+  <form class="sheet" method="post">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="profile">
+    <h2>Profile</h2>
+    <div class="fields">
+      <div class="field{% if errors.name %} has-error{% endif %}"><label for="name">Name</label>
+        <input id="name" name="name" autocomplete="name" maxlength="80" value="{{ user.name }}" required>
+        {% if errors.name %}<p class="error">{{ errors.name }}</p>{% endif %}</div>
+      <div class="field"><label for="phone">Phone <span class="optional">optional</span></label>
+        <input id="phone" name="phone" type="tel" autocomplete="tel" maxlength="40" value="{{ user.phone }}">
+        <p class="hint">Filled in for you on new listings. Only shown if you choose to on a listing.</p></div>
+    </div>
+    <div class="form-actions"><button class="btn" type="submit">Save profile</button></div>
+  </form>
+
+  <form class="sheet" method="post">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="password">
+    <h2>Password</h2>
+    <div class="fields">
+      <div class="field{% if errors.current %} has-error{% endif %}"><label for="current">Current password</label>
+        <input id="current" name="current" type="password" autocomplete="current-password" required>
+        {% if errors.current %}<p class="error">{{ errors.current }}</p>{% endif %}</div>
+      <div class="field{% if errors.password %} has-error{% endif %}"><label for="new-password">New password</label>
+        <input id="new-password" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
+        {% if errors.password %}<p class="error">{{ errors.password }}</p>{% else %}<p class="hint">At least 8 characters.</p>{% endif %}</div>
+      <div class="field{% if errors.confirm %} has-error{% endif %}"><label for="confirm">New password again</label>
+        <input id="confirm" name="confirm" type="password" autocomplete="new-password" maxlength="128" required>
+        {% if errors.confirm %}<p class="error">{{ errors.confirm }}</p>{% endif %}</div>
+    </div>
+    <div class="form-actions"><button class="btn" type="submit">Change password</button></div>
+  </form>
+
+  <form class="sheet sheet-danger" method="post">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="delete">
+    <h2>Delete account</h2>
+    <p class="muted">Deletes your account, your {{ counts.listings }} listing{{ '' if counts.listings == 1 else 's' }} with their photos,
+      and your {{ counts.conversations }} conversation{{ '' if counts.conversations == 1 else 's' }}. This can't be undone.</p>
+    <div class="fields">
+      <div class="field{% if errors.current_delete %} has-error{% endif %}"><label for="current-delete">Your password</label>
+        <input id="current-delete" name="current_delete" type="password" autocomplete="current-password" required>
+        {% if errors.current_delete %}<p class="error">{{ errors.current_delete }}</p>{% endif %}</div>
+    </div>
+    <div class="form-actions"><button class="btn btn-danger" type="submit" data-confirm="Delete your Ownly account and everything in it?">Delete my account</button></div>
+  </form>
+</div>
+{% endblock %}

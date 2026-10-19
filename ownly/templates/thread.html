@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ convo.title }} · Messages · Ownly{% endblock %}
+{% block main %}
+{% set other = convo.seller_name if role == 'buyer' else convo.buyer_name %}
+<div class="wrap thread-wrap">
+  <a class="back" href="{{ url_for('messages.inbox') }}">All messages</a>
+  <header class="thread-head">
+    <div>
+      <h1>{{ other }}</h1>
+      <p class="muted">{{ 'Seller of' if role == 'buyer' else 'Interested in' }}
+        <a href="{{ url_for('listings.detail', listing_id=convo.listing_id) }}">{{ convo.title }}</a> · {{ convo.price | money }}
+        {% if convo.status != 'active' %}· {{ statuses[convo.status] }}{% endif %}</p>
+    </div>
+  </header>
+  <ol class="thread" data-thread>
+    {% for m in messages %}
+      <li class="msg {{ 'msg-mine' if m.sender_id == user.id else 'msg-theirs' }}" {% if loop.last %}id="latest"{% endif %}>
+        <p class="pre">{{ m.body }}</p>
+        <time datetime="{{ m.created_at }}">{{ 'You' if m.sender_id == user.id else other }} · {{ m.created_at[:16] }} UTC</time>
+      </li>
+    {% endfor %}
+  </ol>
+  <form class="reply" method="post" action="{{ url_for('messages.reply', conversation_id=convo.id) }}">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <label class="visually-hidden" for="reply">Reply to {{ other }}</label>
+    <textarea id="reply" name="body" rows="3" maxlength="{{ max_length }}" placeholder="Write a reply" required></textarea>
+    <button class="btn" type="submit">Send</button>
+  </form>
+</div>
+{% endblock %}

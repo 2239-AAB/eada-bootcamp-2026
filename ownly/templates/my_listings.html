@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "_macros.html" import placeholder, status_pill, vs_estimate %}
+{% block title %}My listings · Ownly{% endblock %}
+{% block main %}
+<div class="wrap page-head page-head-row">
+  <div><h1>My listings</h1><p class="muted">{{ listings | length }} home{{ '' if listings | length == 1 else 's' }}</p></div>
+  <a class="btn" href="{{ url_for('listings.sell') }}">List a home</a>
+</div>
+<div class="wrap">
+  {% if listings %}
+    <ul class="rows">
+      {% for item in listings %}
+        <li class="row">
+          <a class="row-media" href="{{ url_for('listings.detail', listing_id=item.id) }}" tabindex="-1" aria-hidden="true">
+            {% if item.cover %}<img src="{{ url_for('listings.photo', name=item.cover) }}" alt="">{% else %}{{ placeholder(item, 'ph-small') }}{% endif %}</a>
+          <div class="row-body">
+            <a class="row-title" href="{{ url_for('listings.detail', listing_id=item.id) }}">{{ item.title }}</a>
+            <p class="row-meta">{{ item.price | money }} · Ownly estimate {{ item.estimate.value | money_short }} · {{ vs_estimate(item) }}</p>
+            <p class="row-meta">{{ item.address }} · {{ item.hood_label }} {{ status_pill(item.status) }}</p>
+          </div>
+          <div class="row-side">
+            <a class="row-count" href="{{ url_for('messages.inbox') }}">{{ counts.get(item.id, 0) }} buyer{{ '' if counts.get(item.id, 0) == 1 else 's' }} in touch</a>
+            <a class="btn btn-quiet btn-small" href="{{ url_for('listings.edit', listing_id=item.id) }}">Edit</a>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="empty"><h3>You haven't listed a home yet</h3><p>It's free, and buyers can message you as soon as it's live.</p>
+      <a class="btn" href="{{ url_for('listings.sell') }}">List your home</a></div>
+  {% endif %}
+</div>
+{% endblock %}

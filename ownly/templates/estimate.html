@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field, location_picker, map_assets %}
+{% block title %}What is my home worth? · Ownly{% endblock %}
+{% block head %}{{ map_assets() }}{% endblock %}
+{% block main %}
+{% set byname = {} %}{% for f in fields %}{% set _ = byname.update({f.name: f}) %}{% endfor %}
+<div class="wrap page-head">
+  <p class="eyebrow">Ownly estimate</p>
+  <h1>What is your home worth?</h1>
+  <p class="muted">Describe the home and the estimate updates as you type. Nothing is saved.</p>
+</div>
+<div class="wrap form-layout">
+  <form class="sheet" method="get" action="{{ url_for('pages.estimate_page') }}" data-estimate-form novalidate>
+    <fieldset>
+      <legend>Where and what</legend>
+      <div class="fields">{% for name in ['neighborhood', 'style', 'living_area', 'bedrooms', 'full_baths', 'half_baths', 'year_built', 'year_remodeled'] %}{{ field(byname[name], values, errors) }}{% endfor %}</div>
+      {{ location_picker(values, errors, map_info) }}
+    </fieldset>
+    <fieldset>
+      <legend>Quality and condition</legend>
+      <div class="fields">{% for name in ['overall_quality', 'overall_condition', 'kitchen_quality', 'exterior_quality'] %}{{ field(byname[name], values, errors) }}{% endfor %}</div>
+    </fieldset>
+    <fieldset>
+      <legend>Basement, lot and extras</legend>
+      <div class="fields">{% for name in ['basement_area', 'basement_finished', 'lot_area', 'garage_cars', 'fireplaces', 'central_air'] %}{{ field(byname[name], values, errors) }}{% endfor %}</div>
+    </fieldset>
+    <div class="form-actions"><button class="btn" type="submit">Estimate</button>
+      <a class="btn btn-quiet" href="{{ url_for('listings.sell') }}">List this home</a></div>
+  </form>
+
+  <aside class="est-panel" data-estimate-panel aria-live="polite">
+    <p class="est-eyebrow" data-est="heading">Ownly estimate{% if result %}, {{ result.quarter }}{% endif %}</p>
+    <p class="est-value" data-est="value">{{ result.value | money_short if result else '–' }}</p>
+    <p class="est-range" data-est="range">{% if result %}Likely range {{ result.low | money_short }} – {{ result.high | money_short }}{% endif %}</p>
+    <div class="est-meter" data-est="meter" hidden><span class="est-band"></span><span class="est-tick"></span><span class="est-ask" data-est="ask-mark"></span></div>
+    <p class="est-compare" data-est="compare" hidden></p>
+    <ul class="est-notes" data-est="notes">{% if result %}{% for n in result.notes %}<li>{{ n }}</li>{% endfor %}{% endif %}</ul>
+    <p class="est-basis" data-est="basis">{% if result %}Model price in mid-2010 {{ result.model_price | money }}, times {{ '%.2f' | format(result.factor) }} for the change in Ames prices since.{% endif %}</p>
+    <details class="est-how">
+      <summary>How the estimate works</summary>
+      <p>{{ valuer.model_name }} learned what Ames homes sold for in 2006–2010 from 2,925 sales. It prices this home as if it sold in mid-2010.
+        The FHFA house price index for Ames then moves that price to today: published through {{ valuer.today().latest_label }}, and extended at the
+        two-year trend of {{ '%.1f' | format(valuer.today().growth * 100) }}% a year after that.</p>
+      <p>On houses it had never seen, the model was within about 7% on average, and 8 in 10 sold inside the likely range.
+        The step from 2010 to today adds uncertainty that can't be measured without recent sales, so treat this as a guide, not an appraisal.</p>
+    </details>
+  </aside>
+</div>
+{% endblock %}

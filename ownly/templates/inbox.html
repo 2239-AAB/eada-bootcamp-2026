@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Messages · Ownly{% endblock %}
+{% block main %}
+<div class="wrap page-head"><h1>Messages</h1>
+  <p class="muted">Conversations with buyers about your homes, and with sellers you've contacted.</p></div>
+<div class="wrap">
+  {% if conversations %}
+    <ul class="inbox">
+      {% for c in conversations %}
+        <li><a class="convo{% if c.unread %} is-unread{% endif %}" href="{{ url_for('messages.thread', conversation_id=c.id) }}">
+          <span class="avatar" aria-hidden="true">{{ (c.other_name or '?')[:1] | upper }}</span>
+          <span class="convo-body">
+            <span class="convo-top"><strong>{{ c.other_name }}</strong>
+              <span class="convo-role">{{ 'Seller' if c.buyer_id == user.id else 'Buyer' }} · {{ c.title }}</span></span>
+            <span class="convo-last">{% if c.last_sender == user.id %}You: {% endif %}{{ c.last_body | truncate(120) }}</span>
+          </span>
+          <span class="convo-side"><time datetime="{{ c.updated_at }}">{{ c.updated_at[:10] }}</time>
+            {% if c.unread %}<span class="badge" aria-label="{{ c.unread }} unread">{{ c.unread }}</span>{% endif %}</span>
+        </a></li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="empty"><h3>No messages yet</h3><p>When you contact a seller, or a buyer contacts you, the conversation shows up here.</p>
+      <a class="btn" href="{{ url_for('listings.browse') }}">Browse homes</a></div>
+  {% endif %}
+</div>
+{% endblock %}

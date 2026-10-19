@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% from "_macros.html" import placeholder, status_pill, vs_estimate, map_assets %}
+{% block title %}{{ listing.title }} · {{ listing.price | money }} · Ownly{% endblock %}
+{% block head %}{{ map_assets() }}{% endblock %}
+{% block main %}
+{% set est = listing.estimate %}
+{% set owner = user and user.id == listing.user_id %}
+<div class="wrap listing">
+  <a class="back" href="{{ url_for('listings.browse') }}">All homes</a>
+
+  <div class="gallery" data-gallery>
+    {% if photos %}
+      <img class="gallery-main" data-gallery-main src="{{ url_for('listings.photo', name=photos[0].filename) }}" alt="Photo 1 of {{ photos | length }} of {{ listing.title }}">
+      {% if photos | length > 1 %}
+        <div class="thumbs">
+          {% for p in photos %}
+            <button type="button" class="thumb" data-src="{{ url_for('listings.photo', name=p.filename) }}" data-alt="Photo {{ loop.index }} of {{ photos | length }} of {{ listing.title }}" aria-label="Show photo {{ loop.index }}" {% if loop.first %}aria-current="true"{% endif %}>
+              <img src="{{ url_for('listings.photo', name=p.filename) }}" alt="" loading="lazy"></button>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% else %}
+      {{ placeholder(listing, 'ph-large') }}
+    {% endif %}
+  </div>
+
+  <div class="listing-grid">
+    <div class="listing-main">
+      <div class="listing-tags">{% if listing.is_example %}<span class="pill pill-example">Example listing</span>{% endif %}{{ status_pill(listing.status) }}</div>
+      <p class="listing-price">{{ listing.price | money }}</p>
+      <h1 class="listing-title">{{ listing.title }}</h1>
+      <p class="listing-address">{{ listing.address }} · {{ listing.hood_label }}</p>
+
+      <dl class="facts">
+        <div><dt>Bedrooms</dt><dd>{{ listing.bedrooms }}</dd></div>
+        <div><dt>Bathrooms</dt><dd>{{ listing.baths }}</dd></div>
+        <div><dt>Living area</dt><dd>{{ listing.living_area | number }} sq ft</dd></div>
+        <div><dt>Built</dt><dd>{{ listing.year_built }}</dd></div>
+      </dl>
+
+      <section class="est-card" aria-labelledby="est-h">
+        <div class="est-card-head">
+          <div>
+            <p class="est-eyebrow" id="est-h">Ownly estimate, {{ est.quarter }}</p>
+            <p class="est-value">{{ est.value | money_short }}</p>
+            <p class="est-range">Likely range {{ est.low | money_short }} – {{ est.high | money_short }}</p>
+          </div>
+          <p class="est-verdict">Asking price is<br><strong>{{ vs_estimate(listing) | lower }}</strong></p>
+        </div>
+        <div class="est-meter" data-meter data-low="{{ est.low }}" data-high="{{ est.high }}" data-value="{{ est.value }}" data-ask="{{ listing.price }}" hidden>
+          <span class="est-band"></span><span class="est-tick"></span><span class="est-ask"></span>
+        </div>
+        <div class="est-legend" hidden data-meter-legend><span><i class="key-band"></i>Likely range</span><span><i class="key-tick"></i>Estimate</span><span><i class="key-ask"></i>Asking price</span></div>
+        {% if notes %}<ul class="est-notes">{% for n in notes %}<li>{{ n }}</li>{% endfor %}</ul>{% endif %}
+        <p class="est-basis">From the details on this page. The model learned from 2,925 Ames sales in 2006–2010;
+          the Ames house price index moves that price to {{ est.quarter }}{% if est.projected %} (published through {{ est.latest }}, extended at the recent trend){% endif %}.
+          8 in 10 test houses sold within the likely range. Not an appraisal.</p>
+      </section>
+
+      {% if listing.description %}
+        <section class="prose"><h2>About this home</h2><p class="pre">{{ listing.description }}</p></section>
+      {% endif %}
+
+      <section class="location" aria-labelledby="where-h"><h2 id="where-h">Where it is</h2>
+        <div class="map map-detail" data-map="detail" data-lat="{{ listing.lat }}" data-lng="{{ listing.lng }}"
+          data-exact="{{ 1 if listing.exact else 0 }}" role="region" aria-label="Map of {{ listing.hood_label }}"></div>
+        <p class="muted">{% if listing.exact %}{{ listing.address }}, {{ listing.hood_label }}. The seller placed this pin.
+          {% else %}Somewhere in {{ listing.hood_label }}, Ames. The seller hasn't placed a pin, so the circle shows the neighborhood.{% endif %}</p>
+      </section>
+
+      <section class="details"><h2>Details</h2>
+        <dl class="spec">
+          <div><dt>Stories</dt><dd>{{ dict(forms.STYLES)[listing.style] }}</dd></div>
+          <div><dt>Year built</dt><dd>{{ listing.year_built }}</dd></div>
+          <div><dt>Year remodeled</dt><dd>{{ listing.year_remodeled if listing.year_remodeled != listing.year_built else 'Never' }}</dd></div>
+          <div><dt>Living area</dt><dd>{{ listing.living_area | number }} sq ft</dd></div>
+          <div><dt>Basement</dt><dd>{% if listing.basement_area %}{{ listing.basement_area | number }} sq ft, {{ listing.basement_finished | number }} finished{% else %}None{% endif %}</dd></div>
+          <div><dt>Lot</dt><dd>{{ listing.lot_area | number }} sq ft</dd></div>
+          <div><dt>Bedrooms</dt><dd>{{ listing.bedrooms }}</dd></div>
+          <div><dt>Bathrooms</dt><dd>{{ listing.full_baths }} full, {{ listing.half_baths }} half</dd></div>
+          <div><dt>Garage</dt><dd>{% if listing.garage_cars %}{{ listing.garage_cars }} car{{ 's' if listing.garage_cars > 1 }}{% else %}None{% endif %}</dd></div>
+          <div><dt>Fireplaces</dt><dd>{{ listing.fireplaces or 'None' }}</dd></div>
+          <div><dt>Central air</dt><dd>{{ 'Yes' if listing.central_air else 'No' }}</dd></div>
+          <div><dt>Overall quality</dt><dd>{{ dict(forms.QUALITY_10)[listing.overall_quality] }}</dd></div>
+          <div><dt>Overall condition</dt><dd>{{ dict(forms.QUALITY_10)[listing.overall_condition] }}</dd></div>
+          <div><dt>Kitchen</dt><dd>{{ dict(forms.QUALITY_5)[listing.kitchen_quality] }}</dd></div>
+          <div><dt>Exterior</dt><dd>{{ dict(forms.QUALITY_5)[listing.exterior_quality] }}</dd></div>
+          <div><dt>Listed</dt><dd>{{ listing.created_at[:10] }}</dd></div>
+        </dl>
+      </section>
+    </div>
+
+    <aside class="contact" aria-labelledby="contact-h">
+      {% if owner %}
+        <h2 id="contact-h">Your listing</h2>
+        <p class="muted">{{ enquiries }} buyer{{ '' if enquiries == 1 else 's' }} ha{{ 's' if enquiries == 1 else 've' }} messaged you about this home.</p>
+        <a class="btn btn-block" href="{{ url_for('listings.edit', listing_id=listing.id) }}">Edit listing</a>
+        <a class="btn btn-quiet btn-block" href="{{ url_for('messages.inbox') }}">Open messages</a>
+        <form class="status-form" method="post" action="{{ url_for('listings.set_status', listing_id=listing.id) }}">
+          <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <label for="status">Status</label>
+          <div class="input-row"><select id="status" name="status">
+            {% for key, label in statuses.items() %}<option value="{{ key }}" {% if listing.status == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select><button class="btn btn-quiet" type="submit">Save</button></div>
+        </form>
+      {% elif listing.is_example %}
+        <h2 id="contact-h">Example listing</h2>
+        <p class="muted">This home was built from a real 2006–2010 Ames sale to show how Ownly works. There is no seller to contact.</p>
+      {% elif listing.status == 'sold' %}
+        <h2 id="contact-h">This home is sold</h2>
+        <p class="muted">The seller isn't taking messages about it any more.</p>
+      {% elif not user %}
+        <h2 id="contact-h">Interested?</h2>
+        <p class="muted">Sign up or log in to message the seller. It's free.</p>
+        <a class="btn btn-block" href="{{ url_for('auth.register', next=request.path) }}">Sign up to contact</a>
+        <a class="btn btn-quiet btn-block" href="{{ url_for('auth.login', next=request.path) }}">Log in</a>
+      {% else %}
+        <h2 id="contact-h">Contact {{ listing.contact_name }}</h2>
+        {% if listing.show_phone and listing.contact_phone %}
+          <p class="contact-line"><span>Phone</span><a href="tel:{{ listing.contact_phone | replace(' ', '') }}">{{ listing.contact_phone }}</a></p>
+        {% endif %}
+        {% if listing.show_email %}
+          <p class="contact-line"><span>Email</span><a href="mailto:{{ listing.owner_email }}">{{ listing.owner_email }}</a></p>
+        {% endif %}
+        {% if conversation %}
+          <p class="muted">You're already talking to this seller.</p>
+          <a class="btn btn-quiet btn-block" href="{{ url_for('messages.thread', conversation_id=conversation.id) }}">Open conversation</a>
+        {% endif %}
+        <form method="post" action="{{ url_for('listings.contact', listing_id=listing.id) }}" class="contact-form">
+          <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+          <label for="body">{{ 'Send another message' if conversation else 'Message' }}</label>
+          <textarea id="body" name="body" rows="5" maxlength="2000" required>{% if not conversation %}Hi {{ listing.contact_name }}, I'm interested in {{ listing.title }}. Is it still available?{% endif %}</textarea>
+          <button class="btn btn-block" type="submit">Send message</button>
+          <p class="hint">The seller replies in your Ownly messages. Your email address stays private.</p>
+        </form>
+      {% endif %}
+    </aside>
+  </div>
+</div>
+{% endblock %}

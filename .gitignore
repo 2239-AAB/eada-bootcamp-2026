@@ -1,0 +1,27 @@
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
+
+# Downloaded or rebuilt by train.py / report.py
+data/openml_cache/
+results/models/*
+# Ownly prices homes with this one, so it stays in the repository
+!results/models/xgb.joblib
+results/report_artifact.html
+
+# Ownly's database, uploaded photos and session secret
+ownly/instance/
+
+# Local tool state (Claude Code, Ruflo plugin)
+.claude/
+.claude-flow/
+.swarm/
+ruvector.db
+agentdb.rvf*
+
+# Built in a separate session; not part of this repository yet
+portal/
+
+# Run logs (contain local paths)
+results/train.log

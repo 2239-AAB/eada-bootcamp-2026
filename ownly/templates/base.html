@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Ownly{% endblock %}</title>
+<meta name="description" content="Homes for sale by their owners in Ames, Iowa, each with an Ownly price estimate.">
+<link rel="icon" href="{{ url_for('static', filename='mark.svg') }}" type="image/svg+xml">
+{% block head %}{% endblock %}
+<link rel="stylesheet" href="{{ url_for('static', filename='ownly.css') }}">
+<script src="{{ url_for('static', filename='ownly.js') }}" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="bar">
+  <div class="bar-inner">
+    <a class="brand" href="{{ url_for('pages.home') }}" aria-label="Ownly, home page">{% include "_mark.svg" %}<span class="wordmark">ownly</span></a>
+    <nav class="nav" aria-label="Main">
+      {% set here = request.endpoint or '' %}
+      <a href="{{ url_for('listings.browse') }}" {% if here in ('listings.browse', 'listings.detail') %}aria-current="page"{% endif %}>Buy</a>
+      <a href="{{ url_for('listings.sell') }}" {% if here == 'listings.sell' %}aria-current="page"{% endif %}>Sell</a>
+      <a href="{{ url_for('pages.estimate_page') }}" {% if here == 'pages.estimate_page' %}aria-current="page"{% endif %}>Estimate</a>
+    </nav>
+    <div class="bar-actions">
+      {% if user %}
+        <a class="bar-link" href="{{ url_for('messages.inbox') }}" {% if here.startswith('messages.') %}aria-current="page"{% endif %}>Messages{% if unread %}<span class="badge" aria-label="{{ unread }} unread">{{ unread }}</span>{% endif %}</a>
+        <details class="menu">
+          <summary><span class="avatar" aria-hidden="true">{{ (user.name or user.email)[:1] | upper }}</span><span class="menu-name">{{ user.name or user.email }}</span></summary>
+          <div class="menu-panel">
+            <a href="{{ url_for('listings.mine') }}">My listings</a>
+            <a href="{{ url_for('auth.account') }}">Account</a>
+            <form method="post" action="{{ url_for('auth.logout') }}">
+              <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+              <button type="submit">Log out</button>
+            </form>
+          </div>
+        </details>
+      {% else %}
+        <a class="bar-link" href="{{ url_for('auth.login') }}">Log in</a>
+        <a class="btn btn-small" href="{{ url_for('auth.register') }}">Sign up</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+{% with notes = get_flashed_messages() %}
+  {% if notes %}<div class="flash" role="status">{% for note in notes %}<p>{{ note }}</p>{% endfor %}</div>{% endif %}
+{% endwith %}
+<main id="main">{% block main %}{% endblock %}</main>
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand">{% include "_mark.svg" %}<span class="wordmark">ownly</span></div>
+    <p>Homes sold by their owners in Ames, Iowa. Ownly estimates come from a model trained on 2,925 Ames sales (2006–2010),
+      moved to today with the FHFA house price index for the Ames metro. They are a guide, not an appraisal.</p>
+  </div>
+</footer>
+</body>
+</html>

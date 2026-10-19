@@ -1,0 +1,107 @@
+{% macro field(f, values, errors, wide=false) -%}
+{%- set value = values.get(f.name) -%}
+{%- set err = errors.get(f.name) -%}
+{%- set fid = 'f-' ~ f.name -%}
+{% if f.kind == 'bool' %}
+<label class="check{% if wide %} span-all{% endif %}" for="{{ fid }}">
+  <input type="checkbox" id="{{ fid }}" name="{{ f.name }}" value="1" {% if value %}checked{% endif %}>
+  <span>{{ f.label }}</span>
+</label>
+{% else %}
+<div class="field{% if wide or f.kind == 'longtext' %} span-all{% endif %}{% if err %} has-error{% endif %}">
+  <label for="{{ fid }}">{{ f.label }}{% if not f.required %} <span class="optional">optional</span>{% endif %}</label>
+  {% if f.kind == 'choice' %}
+    <select id="{{ fid }}" name="{{ f.name }}" {% if err %}aria-invalid="true" aria-describedby="{{ fid }}-err"{% endif %}>
+      {% for key, label in f.choices %}<option value="{{ key }}" {% if key|string == value|string %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  {% elif f.kind == 'longtext' %}
+    <textarea id="{{ fid }}" name="{{ f.name }}" rows="6" maxlength="{{ f.hi }}" {% if err %}aria-invalid="true" aria-describedby="{{ fid }}-err"{% endif %}>{{ value or '' }}</textarea>
+  {% else %}
+    <div class="input-row">
+      {% if f.name == 'price' %}<span class="prefix" aria-hidden="true">$</span>{% endif %}
+      <input id="{{ fid }}" name="{{ f.name }}" value="{{ value if value is not none else '' }}"
+        {% if f.kind == 'int' %}type="text" inputmode="numeric" pattern="[0-9,]*" autocomplete="off"
+        {% elif f.name == 'contact_phone' %}type="tel" autocomplete="tel"
+        {% elif f.name == 'address' %}type="text" autocomplete="street-address"
+        {% elif f.name == 'contact_name' %}type="text" autocomplete="name"
+        {% else %}type="text"{% endif %}
+        {% if f.kind == 'text' %}maxlength="{{ f.hi }}"{% endif %}
+        {% if f.required %}required{% endif %}
+        {% if err %}aria-invalid="true" aria-describedby="{{ fid }}-err"{% elif f.hint %}aria-describedby="{{ fid }}-hint"{% endif %}>
+      {% if f.unit and f.unit != 'USD' %}<span class="unit">{{ f.unit }}</span>{% endif %}
+    </div>
+  {% endif %}
+  {% if err %}<p class="error" id="{{ fid }}-err">{{ err }}</p>{% elif f.hint %}<p class="hint" id="{{ fid }}-hint">{{ f.hint }}</p>{% endif %}
+</div>
+{% endif %}
+{%- endmacro %}
+
+{% macro status_pill(status) -%}
+{% if status != 'active' %}<span class="pill pill-{{ status }}">{{ statuses[status] }}</span>{% endif %}
+{%- endmacro %}
+
+{% macro vs_estimate(item) -%}
+{%- set d = item.vs_estimate -%}
+{%- if d > 0.015 -%}{{ (d * 100) | round(0) | int }}% above estimate
+{%- elif d < -0.015 -%}{{ (-d * 100) | round(0) | int }}% below estimate
+{%- else -%}In line with estimate{%- endif -%}
+{%- endmacro %}
+
+{% macro placeholder(item, size='') -%}
+<div class="ph hue-{{ item.hue }} {{ size }}" role="img" aria-label="No photo yet">
+  <svg viewBox="0 0 64 48" aria-hidden="true" focusable="false"><path d="M12 24 32 8l20 16v17a2 2 0 0 1-2 2H39V31H25v12H14a2 2 0 0 1-2-2z"/></svg>
+</div>
+{%- endmacro %}
+
+{% macro card(item) -%}
+<article class="card" data-listing="{{ item.id }}">
+  <a class="card-link" href="{{ url_for('listings.detail', listing_id=item.id) }}">
+    <div class="card-media">
+      {% if item.cover %}<img src="{{ url_for('listings.photo', name=item.cover) }}" alt="" loading="lazy">{% else %}{{ placeholder(item) }}{% endif %}
+      <div class="card-tags">{% if item.is_example %}<span class="pill pill-example">Example</span>{% endif %}{{ status_pill(item.status) }}</div>
+    </div>
+    <div class="card-body">
+      <p class="card-price">{{ item.price | money }}</p>
+      <p class="card-est"><span class="est-dot" aria-hidden="true"></span>Ownly estimate {{ item.estimate.value | money_short }} · {{ vs_estimate(item) }}</p>
+      <h3 class="card-title">{{ item.title }}</h3>
+      <p class="card-facts">{{ item.bedrooms }} bd · {{ item.baths }} ba · {{ item.living_area | number }} sq ft</p>
+      <p class="card-place">{{ item.hood_label }}</p>
+    </div>
+  </a>
+</article>
+{%- endmacro %}
+
+{% macro map_assets() -%}
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
+<script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}" defer></script>
+{%- endmacro %}
+
+{% macro location_picker(values, errors, map_info) -%}
+<div class="picker" data-picker>
+  <p class="picker-label" id="pin-label">Where is it? <span class="optional">optional</span></p>
+  <p class="hint">Click the map where the home is, or drag the pin. Ownly sets the neighborhood from the pin.
+    Without a pin, buyers see the home somewhere in its neighborhood.</p>
+  <div class="map map-picker" data-map="picker" role="region" aria-labelledby="pin-label"></div>
+  <p class="picker-status"><span data-pin-status aria-live="polite">No pin yet.</span>
+    <button type="button" class="link-quiet" data-pin-clear hidden>Remove pin</button></p>
+  <input type="hidden" name="latitude" value="{{ values.get('latitude') if values.get('latitude') is not none else '' }}">
+  <input type="hidden" name="longitude" value="{{ values.get('longitude') if values.get('longitude') is not none else '' }}">
+  {% if errors.get('latitude') or errors.get('longitude') %}<p class="error">{{ errors.get('latitude') or errors.get('longitude') }}</p>{% endif %}
+  <script type="application/json" id="map-info">{{ map_info | tojson }}</script>
+</div>
+{%- endmacro %}
+
+{% macro estimate_panel(heading, live=true) -%}
+<aside class="est-panel" {% if live %}data-estimate-panel{% endif %} aria-live="polite">
+  <p class="est-eyebrow">{{ heading }}</p>
+  <p class="est-value" data-est="value">–</p>
+  <p class="est-range" data-est="range"></p>
+  <div class="est-meter" data-est="meter" hidden>
+    <span class="est-band"></span><span class="est-tick"></span><span class="est-ask" data-est="ask-mark"></span>
+  </div>
+  <div class="est-legend" data-est="legend" hidden><span><i class="key-band"></i>Likely range</span><span><i class="key-tick"></i>Estimate</span><span><i class="key-ask"></i>Your price</span></div>
+  <p class="est-compare" data-est="compare" hidden></p>
+  <ul class="est-notes" data-est="notes"></ul>
+  <p class="est-basis" data-est="basis"></p>
+</aside>
+{%- endmacro %}

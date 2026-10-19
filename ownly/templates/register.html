@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Sign up · Ownly{% endblock %}
+{% block main %}
+<div class="auth">
+  <h1>Create your Ownly account</h1>
+  <p class="muted">One account to list your home and to message sellers.</p>
+  <form method="post" class="auth-form" novalidate>
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <input type="hidden" name="next" value="{{ next }}">
+    <div class="field{% if errors.name %} has-error{% endif %}">
+      <label for="name">Your name</label>
+      <input id="name" name="name" autocomplete="name" maxlength="80" value="{{ name }}" required {% if errors.name %}aria-invalid="true" aria-describedby="name-err"{% endif %}>
+      {% if errors.name %}<p class="error" id="name-err">{{ errors.name }}</p>{% endif %}
+    </div>
+    <div class="field{% if errors.email %} has-error{% endif %}">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" autocomplete="email" maxlength="254" value="{{ email }}" required {% if errors.email %}aria-invalid="true" aria-describedby="email-err"{% endif %}>
+      {% if errors.email %}<p class="error" id="email-err">{{ errors.email }}</p>{% endif %}
+    </div>
+    <div class="field{% if errors.password %} has-error{% endif %}">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required aria-describedby="{{ 'password-err' if errors.password else 'password-hint' }}" {% if errors.password %}aria-invalid="true"{% endif %}>
+      {% if errors.password %}<p class="error" id="password-err">{{ errors.password }}</p>{% else %}<p class="hint" id="password-hint">At least 8 characters.</p>{% endif %}
+    </div>
+    <div class="field{% if errors.confirm %} has-error{% endif %}">
+      <label for="confirm">Password again</label>
+      <input id="confirm" name="confirm" type="password" autocomplete="new-password" maxlength="128" required {% if errors.confirm %}aria-invalid="true" aria-describedby="confirm-err"{% endif %}>
+      {% if errors.confirm %}<p class="error" id="confirm-err">{{ errors.confirm }}</p>{% endif %}
+    </div>
+    <button class="btn btn-block" type="submit">Sign up</button>
+  </form>
+  <p class="auth-switch">Already have an account? <a href="{{ url_for('auth.login', next=next or none) }}">Log in</a></p>
+</div>
+{% endblock %}

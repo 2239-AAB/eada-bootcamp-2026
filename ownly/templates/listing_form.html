@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field, estimate_panel, location_picker, map_assets %}
+{% block title %}{{ 'Edit listing' if listing else 'List your home' }} · Ownly{% endblock %}
+{% block head %}{{ map_assets() }}{% endblock %}
+{% block main %}
+{% set byname = {} %}{% for f in fields %}{% set _ = byname.update({f.name: f}) %}{% endfor %}
+{% set groups = [
+  ('The basics', 'Where it is and what you are asking.', ['title', 'address', 'neighborhood', 'price']),
+  ('The home', 'These details drive the Ownly estimate.', ['style', 'living_area', 'bedrooms', 'full_baths', 'half_baths', 'year_built', 'year_remodeled', 'overall_quality', 'overall_condition', 'kitchen_quality', 'exterior_quality']),
+  ('Basement, lot and extras', '', ['basement_area', 'basement_finished', 'lot_area', 'garage_cars', 'fireplaces', 'central_air']),
+  ('Tell buyers about it', '', ['description']),
+] %}
+<div class="wrap page-head">
+  <a class="back" href="{{ url_for('listings.detail', listing_id=listing.id) if listing else url_for('listings.mine') }}">{{ 'Back to the listing' if listing else 'My listings' }}</a>
+  <h1>{{ 'Edit your listing' if listing else 'List your home' }}</h1>
+  <p class="muted">Free, and you can change it any time. Fields marked optional can stay empty.</p>
+</div>
+<div class="wrap form-layout">
+  <form class="sheet" method="post" enctype="multipart/form-data" data-estimate-form novalidate>
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    {% if errors %}<p class="form-alert" role="alert">Some details need another look. They're marked below.</p>{% endif %}
+    {% for title, note, names in groups %}
+      <fieldset>
+        <legend>{{ title }}</legend>
+        {% if note %}<p class="legend-note">{{ note }}</p>{% endif %}
+        <div class="fields">{% for name in names %}{{ field(byname[name], values, errors) }}{% endfor %}</div>
+        {% if loop.first %}{{ location_picker(values, errors, map_info) }}{% endif %}
+      </fieldset>
+    {% endfor %}
+
+    <fieldset>
+      <legend>Photos</legend>
+      <p class="legend-note">Up to {{ max_photos }} JPEG, PNG or WebP photos, 8 MB each. The first one leads the listing.</p>
+      {% if photos %}
+        <ul class="photo-list">
+          {% for p in photos %}
+            <li><img src="{{ url_for('listings.photo', name=p.filename) }}" alt="Photo {{ loop.index }}">
+              <button class="link-danger" type="submit" formmethod="post" formnovalidate
+                formaction="{{ url_for('listings.delete_photo', listing_id=listing.id, photo_id=p.id) }}"
+                data-confirm="Remove this photo? Unsaved changes on this page will be lost.">Remove</button></li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+      {% if photos | length < max_photos %}
+        <label class="drop" for="f-photos">
+          <span class="drop-title">Add photos</span>
+          <span class="drop-note" data-photo-count>Choose files or drag them here</span>
+          <input id="f-photos" type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple>
+        </label>
+        <div class="photo-preview" data-photo-preview></div>
+      {% endif %}
+    </fieldset>
+
+    <fieldset>
+      <legend>How buyers reach you</legend>
+      <p class="legend-note">Signed-in buyers can always message you on Ownly. Your phone and email only show if you tick the boxes.</p>
+      <div class="fields">
+        {{ field(byname.contact_name, values, errors) }}
+        {{ field(byname.contact_phone, values, errors) }}
+        {{ field(byname.show_phone, values, errors, wide=true) }}
+        {{ field(byname.show_email, values, errors, wide=true) }}
+      </div>
+    </fieldset>
+
+    <div class="form-actions">
+      <button class="btn" type="submit">{{ 'Save changes' if listing else 'Publish listing' }}</button>
+      <a class="btn btn-quiet" href="{{ url_for('listings.detail', listing_id=listing.id) if listing else url_for('listings.mine') }}">Cancel</a>
+    </div>
+  </form>
+  {{ estimate_panel('Ownly estimate for this home') }}
+</div>
+{% if listing %}
+<div class="wrap danger-zone">
+  <form method="post" action="{{ url_for('listings.delete', listing_id=listing.id) }}">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <button class="link-danger" type="submit" data-confirm="Delete this listing and its photos? Conversations about it will be deleted too.">Delete this listing</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

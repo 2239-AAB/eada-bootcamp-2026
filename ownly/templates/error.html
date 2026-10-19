@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · Ownly{% endblock %}
+{% block main %}
+<div class="auth error-page">
+  <p class="eyebrow">Error {{ code }}</p>
+  <h1>{{ title }}</h1>
+  {% if detail %}<p class="muted">{{ detail }}</p>{% endif %}
+  <a class="btn" href="{{ url_for('pages.home') }}">Go to the home page</a>
+</div>
+{% endblock %}

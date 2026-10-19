@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% from "_macros.html" import card %}
+{% block title %}Ownly · Homes sold by their owners in Ames{% endblock %}
+{% block main %}
+<section class="hero">
+  <div class="wrap hero-inner">
+    <p class="eyebrow">Ames, Iowa</p>
+    <h1>Homes sold by their owners. Priced in the open.</h1>
+    <p class="lede">List your home for free, talk to buyers directly, and see an independent Ownly estimate next to every asking price.</p>
+    <form class="search" action="{{ url_for('listings.browse') }}" method="get" role="search">
+      <label class="search-field"><span>Neighborhood</span>
+        <select name="neighborhood"><option value="">Anywhere in Ames</option>
+          {% for code, label in neighborhoods %}<option value="{{ code }}">{{ label }}</option>{% endfor %}</select></label>
+      <label class="search-field"><span>Max price</span>
+        <select name="max_price"><option value="">Any</option>
+          {% for p in [150000, 200000, 250000, 300000, 400000, 500000, 750000] %}<option value="{{ p }}">{{ p | money_short }}</option>{% endfor %}</select></label>
+      <label class="search-field"><span>Bedrooms</span>
+        <select name="beds"><option value="">Any</option>{% for b in [1, 2, 3, 4, 5] %}<option value="{{ b }}">{{ b }}+</option>{% endfor %}</select></label>
+      <button class="btn" type="submit">Search homes</button>
+    </form>
+  </div>
+</section>
+
+<section class="wrap section">
+  <div class="section-head">
+    <h2>New on Ownly</h2>
+    <a class="more" href="{{ url_for('listings.browse') }}">See all {{ count }} home{{ '' if count == 1 else 's' }}</a>
+  </div>
+  {% if listings %}
+    <div class="grid">{% for item in listings %}{{ card(item) }}{% endfor %}</div>
+  {% else %}
+    <div class="empty"><h3>No homes listed yet</h3><p>Be the first: listing is free and takes a few minutes.</p>
+      <a class="btn" href="{{ url_for('listings.sell') }}">List your home</a></div>
+  {% endif %}
+</section>
+
+<section class="band">
+  <div class="wrap band-inner">
+    <div>
+      <p class="eyebrow">Ownly estimate</p>
+      <h2>What is your home worth today?</h2>
+      <p>Describe your home and get an estimate in seconds. It comes from a model trained on 2,925 Ames sales,
+        moved to {{ today.label }} with the Ames house price index.</p>
+    </div>
+    <a class="btn btn-light" href="{{ url_for('pages.estimate_page') }}">Get an estimate</a>
+  </div>
+</section>
+
+<section class="wrap section how">
+  <h2 class="visually-hidden">How Ownly works</h2>
+  <div class="how-grid">
+    <div><h3>List for free</h3><p>Add photos, the details buyers ask about, and your price. Change it any time.</p></div>
+    <div><h3>Hear from buyers</h3><p>Buyers message you on Ownly. Your phone and email stay private unless you choose to show them.</p></div>
+    <div><h3>Priced in the open</h3><p>Every listing shows the Ownly estimate and its range, so buyers and sellers start from the same number.</p></div>
+  </div>
+</section>
+{% endblock %}
