@@ -1,0 +1,9 @@
+# Caddy gets and renews the HTTPS certificate for {SITE} by itself, and redirects http to https.
+{SITE} {
+	encode zstd gzip
+	request_body {
+		max_size 45MB
+	}
+	header -Server
+	reverse_proxy 127.0.0.1:8000
+}

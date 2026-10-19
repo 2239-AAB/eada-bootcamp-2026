@@ -381,3 +381,17 @@ def test_hidden_files_are_never_served(app, client):
     finally:
         (hidden / "state.json").unlink()
         hidden.rmdir()
+
+
+def test_server_settings_from_the_environment(tmp_path, monkeypatch):
+    monkeypatch.setenv("OWNLY_INSTANCE", str(tmp_path / "data"))
+    monkeypatch.setenv("OWNLY_HTTPS", "1")
+    monkeypatch.setenv("OWNLY_PROXIES", "1")
+    app = create_app({"TESTING": True})
+    assert app.config["DATABASE"].startswith(str(tmp_path / "data"))
+    assert app.config["SESSION_COOKIE_SECURE"]
+    client = app.test_client()
+    r = client.get("/", headers={"X-Forwarded-Proto": "https"})
+    assert r.headers["Strict-Transport-Security"] == "max-age=31536000"
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    assert isinstance(app.wsgi_app, ProxyFix) and app.wsgi_app.x_for == 1

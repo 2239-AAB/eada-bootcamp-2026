@@ -18,8 +18,26 @@ uv pip install --python .venv/bin/python -r requirements.txt
 Data lives in `ownly/instance/` (owner-only permissions, not in git): the SQLite database,
 uploaded photos, and the session secret. Delete the folder to start over.
 
-Tests: `.venv/bin/python -m pytest` (33 tests: accounts, CSRF, rate limits, ownership, messaging,
+Tests: `.venv/bin/python -m pytest` (34 tests: accounts, CSRF, rate limits, ownership, messaging,
 uploads, escaping, the estimate, the map).
+
+## Deploy to DigitalOcean
+
+On a $6/month Droplet (Ubuntu 24.04, 1 GB) with your SSH key, from `house-price-models/` on your computer:
+
+```bash
+ssh root@SERVER_IP 'bash -s' -- SITE < deploy/setup.sh
+```
+
+`SITE` is the name for the HTTPS certificate: your own domain pointed at the Droplet, or the IP with
+dashes plus `.sslip.io` (for `164.92.1.2` that is `164-92-1-2.sslip.io`). The script installs Caddy
+(HTTPS, renewed automatically), Python 3.13 and the packages, runs Ownly under gunicorn as an unprivileged
+`ownly` user with systemd hardening, turns on the firewall (SSH, HTTP, HTTPS only) and automatic security
+updates, and adds the example listings on the first run. Run the same command again to update after a push;
+the data in `/var/lib/ownly` is kept.
+
+Useful on the server: `journalctl -u ownly -f` (app log), `systemctl restart ownly`,
+`sqlite3 /var/lib/ownly/ownly.sqlite3` (data).
 
 ## What it does
 
@@ -65,10 +83,8 @@ reach them through Ownly messages.
 
 These are deliberately left for the launch step:
 
-- **TLS.** Run behind a reverse proxy (Caddy or nginx) with HTTPS and set `OWNLY_HTTPS=1` so the
-  session cookie is marked `Secure`. Use a production server such as gunicorn, not `python -m ownly`.
-- **Client IPs.** Behind a proxy every request looks like it comes from the proxy, which would make
-  the per-IP limits global. Add Werkzeug's `ProxyFix` with the right number of proxies.
+- **TLS, proxy and server** are handled by `deploy/` (Caddy, `OWNLY_HTTPS=1`, `OWNLY_PROXIES=1`,
+  gunicorn). Anywhere else, set those two variables the same way.
 - **Email.** Addresses are not verified (as requested), so anyone can sign up with someone else's
   address, and there is no password reset by email.
 - **Photos** keep their EXIF metadata, which can include where a photo was taken.

@@ -55,7 +55,13 @@ def _secret_key(instance: Path) -> str:
 
 
 def create_app(config: dict | None = None) -> Flask:
-    instance = Path((config or {}).get("INSTANCE", INSTANCE))
+    """The app. On a server, settings come from the environment:
+
+    OWNLY_INSTANCE   folder for the database, photos and secret (default: ownly/instance)
+    OWNLY_HTTPS=1    the site is served over HTTPS: secure cookies and HSTS
+    OWNLY_PROXIES=N  N reverse proxies (Caddy is 1) set X-Forwarded-For/-Proto/-Host
+    """
+    instance = Path((config or {}).get("INSTANCE") or os.environ.get("OWNLY_INSTANCE") or INSTANCE)
     # The database holds password hashes and private messages: owner-only.
     instance.mkdir(mode=0o700, parents=True, exist_ok=True)
     (instance / "uploads").mkdir(mode=0o700, exist_ok=True)
@@ -77,6 +83,12 @@ def create_app(config: dict | None = None) -> Flask:
     if config:
         app.config.update({k: v for k, v in config.items() if k != "INSTANCE"})
     db.init(app.config["DATABASE"])
+
+    proxies = int(os.environ.get("OWNLY_PROXIES", "0") or 0)
+    if proxies:
+        # Behind Caddy the client's address and scheme arrive in headers; trust exactly that many hops.
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=proxies, x_proto=proxies, x_host=proxies)
 
     from . import auth, listings, messages, pages
     for module in (pages, auth, listings, messages):
@@ -100,6 +112,8 @@ def create_app(config: dict | None = None) -> Flask:
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "same-origin"
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        if app.config["SESSION_COOKIE_SECURE"]:
+            response.headers["Strict-Transport-Security"] = "max-age=31536000"
         if g.get("user") is not None or request.path.startswith(("/messages", "/account", "/my")):
             response.headers["Cache-Control"] = "no-store"
         return response
